@@ -1,8 +1,13 @@
 import { render, screen } from '@testing-library/react';
-import App from './App';
+import { BrowserRouter } from 'react-router-dom';
+import ProductList from './components/ProductList';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+test('renders product list heading', () => {
+  render(
+    <BrowserRouter>
+      <ProductList />
+    </BrowserRouter>
+  );
+  const headingElement = screen.getByText(/GB Harvest Organic Products/i);
+  expect(headingElement).toBeInTheDocument();
 });
