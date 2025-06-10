@@ -1,6 +1,7 @@
+import React from 'react';
 import PropTypes from 'prop-types';
 
-function Input({ type, placeholder, value, onChange, required = false, className = '' }) {
+function Input({ type, placeholder, value, onChange, required }) {
   return (
     <input
       type={type}
@@ -8,7 +9,7 @@ function Input({ type, placeholder, value, onChange, required = false, className
       value={value}
       onChange={onChange}
       required={required}
-      className={`w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 ${className}`}
+      className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
     />
   );
 }
@@ -16,10 +17,14 @@ function Input({ type, placeholder, value, onChange, required = false, className
 Input.propTypes = {
   type: PropTypes.string.isRequired,
   placeholder: PropTypes.string,
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onChange: PropTypes.func.isRequired,
   required: PropTypes.bool,
-  className: PropTypes.string,
+};
+
+Input.defaultProps = {
+  placeholder: '',
+  required: false,
 };
 
 export default Input;

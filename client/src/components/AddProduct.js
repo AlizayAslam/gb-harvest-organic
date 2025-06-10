@@ -2,7 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
-import Input from './Input';
+import Input from './Input.js';
 
 function AddProduct({ setProducts }) {
   const [newProduct, setNewProduct] = useState({

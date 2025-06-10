@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import Input from './Input';
+import Input from './Input.js';
 
 function Landing() {
   const [email, setEmail] = useState('');
@@ -29,7 +29,7 @@ function Landing() {
       toast.success('Login successful!');
       navigate('/products');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Login failed');
+      toast.error(error.response?.data?.message || 'Login failed');
     }
   };
 

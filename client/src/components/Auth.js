@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import Input from './Input';
+import Input from './Input.js';
 
 function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -21,6 +21,10 @@ function Auth() {
       toast.error('Password must be at least 6 characters');
       return;
     }
+    if (!isLogin && !name) {
+      toast.error('Name is required for sign-up');
+      return;
+    }
     const url = isLogin ? '/login' : '/signup';
     const payload = isLogin ? { email, password } : { name, email, password };
     try {
@@ -33,8 +37,12 @@ function Auth() {
       } else {
         toast.success('Sign-up successful! Please log in.');
         setIsLogin(true);
+        setName('');
+        setEmail('');
+        setPassword('');
       }
     } catch (error) {
+      console.error(`${isLogin ? 'Login' : 'Sign-up'} error:`, error.response?.data);
       toast.error(error.response?.data?.message || `${isLogin ? 'Login' : 'Sign-up'} failed`);
     }
   };

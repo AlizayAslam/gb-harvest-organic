@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from './AuthContext';
+import { useAuth } from './AuthContext.js';
 import { useNavigate } from 'react-router-dom';
 
 function ProductList() {

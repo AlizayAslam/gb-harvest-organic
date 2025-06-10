@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate, useParams } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import Input from './Input';
+import Input from './Input.js';
 
 function EditProduct({ setProducts }) {
   const [product, setProduct] = useState({

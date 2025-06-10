@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from './AuthContext';
+import { useAuth } from './AuthContext.js';
 
 function AdminPanel() {
   const [products, setProducts] = useState([]);
@@ -49,7 +49,7 @@ function AdminPanel() {
         </button>
         <button
           onClick={() => navigate('/products')}
-          className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="p-2 bg-blue-500 text-white rounded shimmer:hover"
         >
           Back to Products
         </button>

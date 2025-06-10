@@ -1,14 +1,16 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './components/AuthContext';
-import ProductList from './components/ProductList';
-import AdminPanel from './components/AdminPanel';
-import AddProduct from './components/AddProduct';
-import EditProduct from './components/EditProduct';
-import Auth from './components/Auth';
-import Landing from './components/Landing';
-import Navbar from './components/Navbar';
-import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider, useAuth } from './components/AuthContext.js';
+import ProductList from './components/ProductList.js';
+import AdminPanel from './components/AdminPanel.js';
+import AddProduct from './components/AddProduct.js';
+import EditProduct from './components/EditProduct.js';
+import Auth from './components/Auth.js';
+import Landing from './components/Landing.js';
+import Navbar from './components/Navbar.js';
+import ProtectedRoute from './components/ProtectedRoute.js';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const { user } = useAuth();
@@ -17,6 +19,7 @@ function App() {
     <Router>
       <AuthProvider>
         <Navbar />
+        <ToastContainer position="top-right" autoClose={3000} />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/products" />} />
@@ -31,14 +34,8 @@ function App() {
               )
             }
           />
-          <Route
-            path="/add-product"
-            element={<ProtectedRoute><AddProduct /></ProtectedRoute>}
-          />
-          <Route
-            path="/edit-product/:id"
-            element={<ProtectedRoute><EditProduct /></ProtectedRoute>}
-          />
+          <Route path="/add-product" element={<ProtectedRoute><AddProduct /></ProtectedRoute>} />
+          <Route path="/edit-product/:id" element={<ProtectedRoute><EditProduct /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </Router>
