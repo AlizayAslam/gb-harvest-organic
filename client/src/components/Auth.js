@@ -13,10 +13,18 @@ function Auth() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!email.includes('@') || !email.includes('.')) {
+      toast.error('Invalid email format');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
     const url = isLogin ? '/login' : '/signup';
     const payload = isLogin ? { email, password } : { name, email, password };
     try {
-      const res = await axios.post(`http://localhost:5000/api/auth${url}`, payload);
+      const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth${url}`, payload);
       if (isLogin) {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('role', res.data.role);
@@ -27,7 +35,7 @@ function Auth() {
         setIsLogin(true);
       }
     } catch (error) {
-      toast.error(error.response?.data?.error || `${isLogin ? 'Login' : 'Sign-up'} failed`);
+      toast.error(error.response?.data?.message || `${isLogin ? 'Login' : 'Sign-up'} failed`);
     }
   };
 

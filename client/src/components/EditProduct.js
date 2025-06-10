@@ -22,7 +22,7 @@ function EditProduct({ setProducts }) {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/products/${id}`, {
+        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/products/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setProduct(res.data);
@@ -40,13 +40,17 @@ function EditProduct({ setProducts }) {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (!product.name || !product.price || !product.category || !product.stock) {
+      toast.error('Name, price, category, and stock are required!');
+      return;
+    }
     if (product.price < 0 || product.stock < 0) {
       toast.error('Price and stock cannot be negative!');
       return;
     }
     try {
       const response = await axios.put(
-        `http://localhost:5000/api/products/${id}`,
+        `${process.env.REACT_APP_API_URL}/api/products/${id}`,
         product,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -54,7 +58,7 @@ function EditProduct({ setProducts }) {
       toast.success('Product updated successfully!');
       navigate('/products');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to update product');
+      toast.error(error.response?.data?.message || 'Failed to update product');
     }
   };
 

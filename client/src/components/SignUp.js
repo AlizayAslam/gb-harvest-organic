@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import Input from './Input';
 
 function Signup() {
   const [email, setEmail] = useState('');
@@ -11,34 +13,46 @@ function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!email.includes('@') || !email.includes('.')) {
+      toast.error('Invalid email format');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
     try {
-      await axios.post('http://localhost:5000/api/auth/signup', { email, password });
-      await login(email, password); // Auto-login after signup
+      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/signup`, { email, password });
+      await login(email, password);
+      toast.success('Signup successful!');
       navigate('/products');
     } catch (error) {
-      alert('Signup failed: ' + error.response.data.message);
+      toast.error(error.response?.data?.message || 'Signup failed');
     }
   };
 
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-4">Sign Up</h2>
-      <form onSubmit={handleSubmit}>
-        <input
+      <h2 className="text-2xl font-bold mb-4 text-green-700">Sign Up</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
           type="email"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          className="w-full p-2 mb-4 border rounded"
+          required
         />
-        <input
+        <Input
           type="password"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          className="w-full p-2 mb-4 border rounded"
+          required
         />
-        <button type="submit" className="w-full p-2 bg-green-500 text-white rounded">
+        <button
+          type="submit"
+          className="w-full p-2 bg-green-500 text-white rounded hover:bg-green-600"
+        >
           Sign Up
         </button>
       </form>

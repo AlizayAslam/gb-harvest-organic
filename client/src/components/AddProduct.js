@@ -22,13 +22,17 @@ function AddProduct({ setProducts }) {
       toast.error('Only admins can add products!');
       return;
     }
+    if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.stock) {
+      toast.error('Name, price, category, and stock are required!');
+      return;
+    }
     if (newProduct.price < 0 || newProduct.stock < 0) {
       toast.error('Price and stock cannot be negative!');
       return;
     }
     try {
       const response = await axios.post(
-        `http://localhost:5000/api/products`,
+        `${process.env.REACT_APP_API_URL}/api/products`,
         newProduct,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -36,7 +40,7 @@ function AddProduct({ setProducts }) {
       setNewProduct({ name: '', price: '', category: '', description: '', stock: '', image: '' });
       toast.success('Product added successfully!');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to add product');
+      toast.error(error.response?.data?.message || 'Failed to add product');
     }
   };
 

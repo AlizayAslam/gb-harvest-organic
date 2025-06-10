@@ -11,6 +11,14 @@ function Landing() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (!email.includes('@') || !email.includes('.')) {
+      toast.error('Invalid email format');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
     try {
       const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
         email,

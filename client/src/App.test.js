@@ -5,9 +5,9 @@ import ProductList from './components/ProductList';
 test('renders product list heading', () => {
   render(
     <BrowserRouter>
-      <ProductList products={[]} setProducts={() => {}} />
+      <ProductList />
     </BrowserRouter>
   );
-  const headingElement = screen.getByText(/GB Harvest Organic Products/i);
+  const headingElement = screen.getByText(/Products/i);
   expect(headingElement).toBeInTheDocument();
 });
