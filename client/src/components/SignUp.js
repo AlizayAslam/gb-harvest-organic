@@ -1,61 +1,44 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import { toast } from 'react-toastify';
-import { useHistory } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-function SignUp() {
-  const [name, setName] = useState('');
+function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const history = useHistory();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/signup`, {
-        name,
-        email,
-        password,
-      });
-      toast.success('Sign-up successful! Please log in.');
-      history.push('/login');
+      await axios.post('http://localhost:5000/api/auth/signup', { email, password });
+      await login(email, password); // Auto-login after signup
+      navigate('/products');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Sign-up failed');
+      alert('Signup failed: ' + error.response.data.message);
     }
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4 text-center">Sign Up</h2>
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-4">
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full p-2 border rounded"
-          required
-        />
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-4">Sign Up</h2>
+      <form onSubmit={handleSubmit}>
         <input
           type="email"
-          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 border rounded"
-          required
+          placeholder="Email"
+          className="w-full p-2 mb-4 border rounded"
         />
         <input
           type="password"
-          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border rounded"
-          required
+          placeholder="Password"
+          className="w-full p-2 mb-4 border rounded"
         />
-        <button
-          type="submit"
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full"
-        >
+        <button type="submit" className="w-full p-2 bg-green-500 text-white rounded">
           Sign Up
         </button>
       </form>
@@ -63,4 +46,4 @@ function SignUp() {
   );
 }
 
-export default SignUp;
+export default Signup;

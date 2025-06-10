@@ -1,41 +1,23 @@
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
-import Landing from './components/Landing';
-import Auth from './components/Auth';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Signup from './components/SignUp';
+import Login from './components/Login';
 import ProductList from './components/ProductList';
-import AddProduct from './components/AddProduct';
-import EditProduct from './components/EditProduct';
-import ProtectedRoute from './components/ProtectedRoute';
-import Navbar from './components/Navbar';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import './App.css';
-import { useState } from 'react';
+import AdminPanel from './components/AdminPanel';
+import { useAuth } from './components/AuthContext';
 
 function App() {
-  const [products, setProducts] = useState([]); // Centralized product state
+  const { user } = useAuth();
 
   return (
     <Router>
-      <div className="App">
-        <Navbar />
-        <ToastContainer />
-        <Switch>
-          <Route exact path="/" component={Landing} />
-          <Route path="/auth" component={Auth} />
-          <Route
-            path="/products"
-            render={(props) => <ProductList {...props} products={products} setProducts={setProducts} />}
-          />
-          <ProtectedRoute
-            path="/add-product"
-            component={(props) => <AddProduct {...props} setProducts={setProducts} />}
-          />
-          <ProtectedRoute
-            path="/edit-product/:id"
-            component={(props) => <EditProduct {...props} setProducts={setProducts} />}
-          />
-        </Switch>
-      </div>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/login" element={!user ? <Login /> : <Navigate to="/products" />} />
+        <Route path="/signup" element={!user ? <Signup /> : <Navigate to="/products" />} />
+        <Route path="/products" element={user ? <ProductList /> : <Navigate to="/login" />} />
+        <Route path="/admin" element={user && user.role === 'admin' ? <AdminPanel /> : <Navigate to="/login" />} />
+      </Routes>
     </Router>
   );
 }

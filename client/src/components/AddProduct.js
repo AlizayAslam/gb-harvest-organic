@@ -2,8 +2,9 @@ import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
+import Input from './Input';
 
-function AddProduct({ token, role, setProducts }) {
+function AddProduct({ setProducts }) {
   const [newProduct, setNewProduct] = useState({
     name: '',
     price: '',
@@ -12,10 +13,12 @@ function AddProduct({ token, role, setProducts }) {
     stock: '',
     image: '',
   });
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'headAdmin') {
       toast.error('Only admins can add products!');
       return;
     }
@@ -25,7 +28,7 @@ function AddProduct({ token, role, setProducts }) {
     }
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/products`,
+        `http://localhost:5000/api/products`,
         newProduct,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -38,30 +41,28 @@ function AddProduct({ token, role, setProducts }) {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4 text-center">Add New Product</h2>
+    <div className="container mx-auto p-6">
+      <h2 className="text-3xl font-bold mb-6 text-center text-green-700">Add New Product</h2>
       <form onSubmit={handleAddProduct} className="max-w-md mx-auto space-y-4">
-        <input
+        <Input
           type="text"
           placeholder="Product Name"
           value={newProduct.name}
           onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-          className="w-full p-2 border rounded"
           required
         />
-        <input
+        <Input
           type="number"
           placeholder="Price"
           value={newProduct.price}
           onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-          className="w-full p-2 border rounded"
           required
           min="0"
         />
         <select
           value={newProduct.category}
           onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-          className="w-full p-2 border rounded"
+          className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         >
           <option value="" disabled>Select Category</option>
@@ -69,30 +70,30 @@ function AddProduct({ token, role, setProducts }) {
           <option value="Dry Fruit">Dry Fruit</option>
           <option value="Shilajit">Shilajit</option>
         </select>
-        <input
+        <Input
           type="text"
           placeholder="Description"
           value={newProduct.description}
           onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-          className="w-full p-2 border rounded"
         />
-        <input
+        <Input
           type="number"
           placeholder="Stock"
           value={newProduct.stock}
           onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-          className="w-full p-2 border rounded"
           required
           min="0"
         />
-        <input
+        <Input
           type="text"
-          placeholder="Image URL"
+          placeholder="Image URL (optional)"
           value={newProduct.image}
           onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-          className="w-full p-2 border rounded"
         />
-        <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+        <button
+          type="submit"
+          className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 w-full"
+        >
           Add Product
         </button>
       </form>
@@ -101,8 +102,6 @@ function AddProduct({ token, role, setProducts }) {
 }
 
 AddProduct.propTypes = {
-  token: PropTypes.string.isRequired,
-  role: PropTypes.string.isRequired,
   setProducts: PropTypes.func.isRequired,
 };
 

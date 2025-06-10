@@ -1,12 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { useHistory } from 'react-router-dom';
+import Input from './Input';
 
 function Landing() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -18,41 +19,44 @@ function Landing() {
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('role', res.data.role);
       toast.success('Login successful!');
-      history.push('/products');
+      navigate('/products');
     } catch (error) {
       toast.error(error.response?.data?.error || 'Login failed');
     }
   };
 
   return (
-    <div className="container mx-auto p-4 text-center">
-      <h1 className="text-4xl font-bold mb-4 text-green-600">Welcome to GB Harvest Organic</h1>
-      <p className="text-lg mb-6">Please log in to explore our organic products.</p>
+    <div className="container mx-auto p-6 text-center">
+      <img
+        src="/images/organic-banner.jpg"
+        alt="Organic Products"
+        className="w-full max-w-2xl mx-auto mb-6 rounded-lg"
+      />
+      <h1 className="text-4xl font-bold mb-6 text-green-600">Welcome to GB Harvest Organic</h1>
+      <p className="text-lg mb-6 text-gray-600">Please log in to explore our organic products.</p>
       <form onSubmit={handleLogin} className="max-w-md mx-auto space-y-4">
-        <input
+        <Input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 border rounded"
           required
         />
-        <input
+        <Input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border rounded"
           required
         />
         <button
           type="submit"
-          className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 w-full"
+          className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 w-full"
         >
           Login
         </button>
       </form>
-      <p className="text-center mt-4">
+      <p className="text-center mt-4 text-gray-600">
         New user? <a href="/auth" className="text-blue-500 hover:underline">Sign Up</a>
       </p>
     </div>

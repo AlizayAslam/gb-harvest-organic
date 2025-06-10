@@ -1,31 +1,33 @@
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function Navbar() {
-  const history = useHistory();
+  const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    history.push('/'); // Redirect to landing page after logout
+    navigate('/');
   };
 
   return (
-    <nav className="bg-green-600 p-4 text-white shadow-md">
+    <nav className="bg-green-600 p-4 text-white shadow-lg">
       <div className="container mx-auto flex justify-between items-center">
         <div>
-          <Link to="/" className="text-xl font-bold">GB Harvest Organic</Link>
+          <Link to="/" className="text-2xl font-bold hover:text-green-200">
+            GB Harvest Organic
+          </Link>
         </div>
-        <div className="flex gap-4 items-center">
-          {token && <Link to="/products" className="hover:underline">Products</Link>}
-          {token && role === 'admin' && (
-            <Link to="/add-product" className="hover:underline">Add Product</Link>
+        <div className="flex gap-6 items-center">
+          <Link to="/products" className="hover:text-green-200">Products</Link>
+          {(token && (role === 'admin' || role === 'headAdmin')) && (
+            <Link to="/add-product" className="hover:text-green-200">Add Product</Link>
           )}
           {token ? (
-            <button onClick={handleLogout} className="hover:underline">Logout</button>
+            <button onClick={handleLogout} className="hover:text-green-200">Logout</button>
           ) : (
-            <Link to="/" className="hover:underline">Login / Sign Up</Link>
+            <Link to="/auth" className="hover:text-green-200">Login / Sign Up</Link>
           )}
         </div>
       </div>

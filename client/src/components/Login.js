@@ -1,53 +1,43 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import { toast } from 'react-toastify';
-import { useHistory } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const history = useHistory();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
-        email,
-        password,
-      });
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('role', res.data.role);
-      toast.success('Login successful!');
-      history.push('/');
+      await login(email, password);
+      navigate('/products');
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Login failed');
+      alert('Login failed: ' + error.response.data.message);
     }
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto space-y-4">
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-4">Login</h2>
+      <form onSubmit={handleSubmit}>
         <input
           type="email"
-          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 border rounded"
-          required
+          placeholder="Email"
+          className="w-full p-2 mb-4 border rounded"
         />
         <input
           type="password"
-          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border rounded"
-          required
+          placeholder="Password"
+          className="w-full p-2 mb-4 border rounded"
         />
-        <button
-          type="submit"
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full"
-        >
+        <button type="submit" className="w-full p-2 bg-blue-500 text-white rounded">
           Login
         </button>
       </form>
