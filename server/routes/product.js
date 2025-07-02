@@ -1,117 +1,106 @@
+
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
-const authMiddleware = require('../middleware/auth');
+const auth = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
 
-// Get all products
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'Uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `image-${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+const upload = multer({ storage });
+
+
 router.get('/', async (req, res) => {
   try {
     const products = await Product.find();
-    res.status(200).json({
-      success: true,
-      products,
-    });
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch products',
-      error: error.message,
-    });
+    res.json({ success: true, products });
+  } catch (err) {
+    console.error('Get products error:', err);
+    res.status(500).json({ message: 'Server error: Failed to fetch products' });
   }
 });
 
-// Get a single product by ID
+
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found',
-      });
-    }
-    res.status(200).json({
-      success: true,
-      product,
-    });
-  } catch (error) {
-    console.error('Error fetching product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch product',
-      error: error.message,
-    });
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    res.json({ success: true, product });
+  } catch (err) {
+    console.error('Get product error:', err);
+    res.status(500).json({ message: 'Server error: Failed to fetch product' });
   }
 });
 
-// Add a new product
-router.post('/', authMiddleware, async (req, res) => {
+
+router.post('/', auth, upload.single('image'), async (req, res) => {
   try {
-    const { name, price, description, category, stock, image } = req.body;
-
-    if (!name || !price || !category || !stock) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name, price, category, and stock are required',
-      });
+    if (req.user.role !== 'admin' && req.user.role !== 'headAdmin') {
+      return res.status(403).json({ message: 'Access denied' });
     }
-
-    const product = new Product({ name, price, description, category, stock, image });
-    await product.save();
-    res.status(201).json({
-      success: true,
-      message: 'Product added successfully',
-      product,
+    console.log('Received product data:', req.body, req.file);
+    const product = new Product({
+      name: req.body.name,
+      description: req.body.description,
+      price: req.body.price,
+      category: req.body.category,
+      stock: req.body.stock,
+      image: req.file ? req.file.path.replace(/\\/g, '/') : req.body.imageUrl || '',
     });
-  } catch (error) {
-    console.error('Error adding product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to add product',
-      error: error.message,
-    });
+    const newProduct = await product.save();
+    res.status(201).json(newProduct);
+  } catch (err) {
+    console.error('Add product error:', err);
+    res.status(400).json({ message: err.message });
   }
 });
 
-// Edit an existing product
-router.put('/:id', authMiddleware, async (req, res) => {
+
+router.put('/:id', auth, upload.single('image'), async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, price, description, category, stock, image } = req.body;
-
-    if (!name || !price || !category || !stock) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name, price, category, and stock are required',
-      });
+    if (req.user.role !== 'admin' && req.user.role !== 'headAdmin') {
+      return res.status(403).json({ message: 'Access denied' });
     }
-
-    const product = await Product.findByIdAndUpdate(
-      id,
-      { name, price, description, category, stock, image, updatedAt: Date.now() },
-      { new: true, runValidators: true }
-    );
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found',
-      });
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    product.name = req.body.name || product.name;
+    product.description = req.body.description || product.description;
+    product.price = req.body.price || product.price;
+    product.category = req.body.category || product.category;
+    product.stock = req.body.stock || product.stock;
+    if (req.file) {
+      product.image = req.file.path.replace(/\\/g, '/');
+    } else if (req.body.imageUrl) {
+      product.image = req.body.imageUrl;
     }
+    const updatedProduct = await product.save();
+    res.json({ success: true, product: updatedProduct });
+  } catch (err) {
+    console.error('Update product error:', err);
+    res.status(400).json({ message: err.message });
+  }
+});
 
-    res.status(200).json({
-      success: true,
-      message: 'Product updated successfully',
-      product,
-    });
-  } catch (error) {
-    console.error('Error editing product:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to edit product',
-      error: error.message,
-    });
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'headAdmin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    console.log('Deleting product with ID:', req.params.id);
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    await product.deleteOne();
+    res.json({ message: 'Product deleted' });
+  } catch (err) {
+    console.error('Delete product error:', err);
+    res.status(500).json({ message: err.message });
   }
 });
 

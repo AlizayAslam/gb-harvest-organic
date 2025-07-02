@@ -1,129 +1,137 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../AuthContext.js';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useAuth } from '../AuthContext.js';
 
 function ProductList() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const [cart, setCart] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { user } = useAuth();
 
+  // Fetch products and user cart
   useEffect(() => {
-    const fetchProducts = async () => {
-      setLoading(true);
-      setError('');
+    const fetchData = async () => {
       try {
-        console.log('Fetching products from:', `${process.env.REACT_APP_API_URL}/api/products`);
-        console.log('Token:', localStorage.getItem('token'));
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/products`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-        });
-        console.log('API Response:', res.data);
-        if (res.data.products) {
-          setProducts(res.data.products || []);
-          if (!res.data.products || res.data.products.length === 0) {
-            setError('No products found');
-          }
-        } else {
-          setError(res.data.message || 'Failed to fetch products');
-          toast.error(res.data.message || 'Failed to fetch products');
+        // Fetch products
+        const productRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/products`);
+        console.log('API response (products):', productRes.data);
+        if (!Array.isArray(productRes.data.products)) {
+          throw new Error('Invalid data format: Expected an array of products');
         }
-      } catch (error) {
-        console.error('Error fetching products:', error.response?.data || error);
-        setError(error.response?.data?.message || 'Error fetching products');
-        toast.error(error.response?.data?.message || 'Error fetching products');
-      } finally {
+        setProducts(productRes.data.products);
+
+        // Fetch cart for authenticated users
+        if (user && user.role === 'user') {
+          const token = localStorage.getItem('token');
+          const cartRes = await axios.get(`${process.env.REACT_APP_API_URL}/api/cart`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          console.log('API response (cart):', cartRes.data);
+          setCart(cartRes.data.items || []);
+        }
         setLoading(false);
+      } catch (err) {
+        console.error('Fetch data error:', err.response || err);
+        setError(err.response?.data?.message || err.message || 'Failed to fetch data');
+        setLoading(false);
+        toast.error(err.response?.data?.message || err.message || 'Failed to fetch data');
       }
     };
-    if (user) {
-      fetchProducts();
-    } else {
-      setLoading(false);
-      navigate('/auth');
-    }
-  }, [user, navigate]);
+    fetchData();
+  }, [user]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
+  const addToCart = async (product) => {
+    if (!user || user.role === 'admin' || user.role === 'headAdmin') {
+      toast.error('Only regular users can add products to the cart');
+      return;
+    }
     try {
-      const response = await axios.delete(`${process.env.REACT_APP_API_URL}/api/products/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-      if (response.data.success) {
-        setProducts(products.filter((p) => p._id !== id));
-        toast.success('Product deleted successfully');
-      } else {
-        toast.error(response.data.message || 'Failed to delete product');
-      }
-    } catch (error) {
-      console.error('Delete error:', error.response?.data || error);
-      toast.error(error.response?.data?.message || 'Error deleting product');
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `${process.env.REACT_APP_API_URL}/api/cart/add`,
+        { productId: product._id, quantity: 1 },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log('Add to cart response:', res.data);
+      setCart(res.data.items);
+      toast.success(`${product.name} added to cart`);
+    } catch (err) {
+      console.error('Add to cart error:', err.response || err);
+      toast.error(err.response?.data?.message || 'Failed to add to cart');
     }
   };
 
-  return (
-    <div className="container mx-auto p-6">
-      <h2 className="text-2xl font-bold mb-4 text-green-700">Products</h2>
-      <div className="flex gap-4 mb-4">
-        {user && (user.role === 'admin' || user.role === 'headAdmin') && (
-          <button
-            onClick={() => navigate('/admin')}
-            className="p-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Manage Products
-          </button>
-        )}
-        <button
-          onClick={() => { logout(); navigate('/auth'); }}
-          className="p-2 bg-red-600 text-white rounded hover:bg-red-700"
-        >
-          Logout
-        </button>
+  if (loading) {
+    return (
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-600 mx-auto"></div>
       </div>
-      {loading ? (
-        <p className="text-center text-gray-600">Loading...</p>
-      ) : error ? (
-        <p className="text-center text-red-600">{error}</p>
-      ) : products.length === 0 ? (
-        <p className="text-center text-gray-600">No products available</p>
+    );
+  }
+  if (error) {
+    return <div className="text-center text-red-600">{error}</div>;
+  }
+
+  return (
+    <div className="container mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Products</h2>
+      {products.length === 0 ? (
+        <p className="text-center">No products found.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {products.map((product) => (
-            <div key={product._id} className="p-4 border rounded-lg shadow-md bg-white">
-              {product.image && (
+            <div key={product._id} className="border p-4 rounded-lg shadow">
+              {product.image ? (
                 <img
-                  src={product.image}
+                  src={product.image.startsWith('http') ? product.image : `${process.env.REACT_APP_API_URL}/${product.image}`}
                   alt={product.name}
                   className="w-full h-48 object-cover mb-4 rounded"
+                  onError={(e) => console.log(`Image failed to load: ${e.target.src}`)}
                 />
-              )}
-              <h3 className="text-lg font-bold text-gray-800">{product.name}</h3>
-              <p className="text-gray-600">Price: ${product.price.toFixed(2)}</p>
-              <p className="text-gray-600">Category: {product.category}</p>
-              <p className="text-gray-600">{product.description || 'No description'}</p>
-              <p className="text-gray-600">Stock: {product.stock}</p>
-              {(user?.role === 'admin' || user?.role === 'headAdmin') && (
-                <div className="flex space-x-2 mt-4">
-                  <button
-                    onClick={() => navigate(`/edit-product/${product._id}`)}
-                    className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Edit Product
-                  </button>
-                  <button
-                    onClick={() => handleDelete(product._id)}
-                    className="p-2 bg-red-600 text-white rounded hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
+              ) : (
+                <div className="w-full h-48 bg-gray-200 flex items-center justify-center rounded mb-4">
+                  <span className="text-gray-500">No Image</span>
                 </div>
+              )}
+              <h3 className="text-lg font-semibold">{product.name}</h3>
+              <p>{product.description}</p>
+              <p className="font-bold">${product.price}</p>
+              <p>Category: {product.category}</p>
+              <p>Stock: {product.stock}</p>
+              {user && user.role === 'user' && (
+                <button
+                  onClick={() => addToCart(product)}
+                  className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                  disabled={product.stock === 0}
+                >
+                  {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+                </button>
               )}
             </div>
           ))}
+        </div>
+      )}
+      {user && user.role === 'user' && (
+        <div className="mt-6 p-4 border rounded-lg">
+          <h3 className="text-xl font-bold">Cart</h3>
+          {cart.length === 0 ? (
+            <p>Your cart is empty.</p>
+          ) : (
+            <>
+              {cart.map((item) => (
+                <div key={item.productId} className="flex justify-between mt-2">
+                  <span>{item.productName} (x{item.quantity})</span>
+                  <span>${(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+              <p className="mt-2 font-bold">
+                Total: ${cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)}
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>

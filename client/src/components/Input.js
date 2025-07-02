@@ -1,7 +1,8 @@
+// client/src/components/Input.js
 import React from 'react';
 import PropTypes from 'prop-types';
 
-function Input({ type, placeholder, value, onChange, required }) {
+function Input({ type, placeholder = '', value, onChange, required = false }) {
   return (
     <input
       type={type}
@@ -20,11 +21,6 @@ Input.propTypes = {
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   onChange: PropTypes.func.isRequired,
   required: PropTypes.bool,
-};
-
-Input.defaultProps = {
-  placeholder: '',
-  required: false,
 };
 
 export default Input;

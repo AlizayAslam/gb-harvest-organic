@@ -1,161 +1,157 @@
-import { useState } from 'react';
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import PropTypes from 'prop-types';
-import Input from './Input.js';
-import { useAuth } from '../AuthContext.js'; // Path: up one directory
 
 function AddProduct({ setProducts }) {
-  const [newProduct, setNewProduct] = useState({
-    name: '',
-    price: '',
-    category: '',
-    description: '',
-    stock: '',
-    imageUrl: '',
-  });
-  const [imageFile, setImageFile] = useState(null);
-  const { user } = useAuth();
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
+  const [category, setCategory] = useState('');
+  const [stock, setStock] = useState('');
+  const [image, setImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState('');
+  const navigate = useNavigate();
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewProduct({ ...newProduct, [name]: value });
-  };
-
-  const handleFileChange = (e) => {
-    setImageFile(e.target.files[0]);
-    setNewProduct({ ...newProduct, imageUrl: '' });
-  };
-
-  const handleAddProduct = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (user?.role !== 'admin' && user?.role !== 'headAdmin') {
-      toast.error('Only admins can add products!');
-      return;
-    }
-    if (!newProduct.name || !newProduct.price || !newProduct.category || !newProduct.stock) {
-      toast.error('Name, price, category, and stock are required!');
-      return;
-    }
-    if (newProduct.price < 0 || newProduct.stock < 0) {
-      toast.error('Price and stock cannot be negative!');
-      return;
-    }
-
     const formData = new FormData();
-    formData.append('name', newProduct.name);
-    formData.append('price', newProduct.price);
-    formData.append('category', newProduct.category);
-    formData.append('description', newProduct.description);
-    formData.append('stock', newProduct.stock);
-    if (imageFile) {
-      formData.append('image', imageFile);
-    } else if (newProduct.imageUrl) {
-      formData.append('imageUrl', newProduct.imageUrl);
+    formData.append('name', name);
+    formData.append('description', description);
+    formData.append('price', price);
+    formData.append('category', category);
+    formData.append('stock', stock);
+    if (image) {
+      formData.append('image', image);
+    } else if (imageUrl) {
+      formData.append('imageUrl', imageUrl);
     }
 
     try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/products`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-      if (response.data.success) {
-        setProducts((prev) => [...prev, response.data.product]);
-        setNewProduct({ name: '', price: '', category: '', description: '', stock: '', imageUrl: '' });
-        setImageFile(null);
-        toast.success('Product added successfully!');
-      } else {
-        toast.error(response.data.message || 'Failed to add product');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found. Please log in again.');
       }
-    } catch (error) {
-      console.error('Add product error:', error.response || error);
-      toast.error(error.response?.data?.message || 'Failed to add product');
+      console.log('Sending product data:', { name, description, price, category, stock, image: image ? image.name : null, imageUrl });
+      const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/products`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      console.log('Add product response:', res.data);
+      setProducts((prev) => [...prev, res.data]);
+      toast.success('Product added successfully');
+      navigate('/admin');
+    } catch (err) {
+      console.error('Add product error:', err.response || err);
+      toast.error(err.response?.data?.message || 'Failed to add product. Check console for details.');
     }
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h2 className="text-3xl font-bold mb-6 text-center text-green-700">Add New Product</h2>
-      <form onSubmit={handleAddProduct} className="max-w-md mx-auto space-y-4">
-        <Input
-          type="text"
-          placeholder="Product Name"
-          name="name"
-          value={newProduct.name}
-          onChange={handleInputChange}
-          required
-        />
-        <Input
-          type="number"
-          placeholder="Price"
-          name="price"
-          value={newProduct.price}
-          onChange={handleInputChange}
-          required
-          min="0"
-          step="0.01"
-        />
-        <select
-          name="category"
-          value={newProduct.category}
-          onChange={handleInputChange}
-          className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-          required
-        >
-          <option value="" disabled>Select Category</option>
-          <option value="Fruit">Fruit</option>
-          <option value="Dry Fruit">Dry Fruit</option>
-          <option value="Shilajit">Shilajit</option>
-        </select>
-        <Input
-          type="text"
-          placeholder="Description"
-          name="description"
-          value={newProduct.description}
-          onChange={handleInputChange}
-        />
-        <Input
-          type="number"
-          placeholder="Stock"
-          name="stock"
-          value={newProduct.stock}
-          onChange={handleInputChange}
-          required
-          min="0"
-        />
-        <Input
-          type="text"
-          placeholder="Image URL (optional)"
-          name="imageUrl"
-          value={newProduct.imageUrl}
-          onChange={handleInputChange}
-          disabled={imageFile !== null}
-        />
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="w-full p-3 border rounded-lg"
-        />
-        <button
-          type="submit"
-          className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 w-full"
-        >
-          Add Product
-        </button>
+    <div className="container mx-auto p-4 max-w-lg">
+      <h2 className="text-2xl font-bold mb-4">Add Product</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium">Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full p-2 border rounded"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Price</label>
+          <input
+            type="number"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full p-2 border rounded"
+            required
+            min="0"
+            step="0.01"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Category</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full p-2 border rounded"
+            required
+          >
+            <option value="" disabled>Select Category</option>
+            <option value="Fruit">Fruit</option>
+            <option value="Dry Fruit">Dry Fruit</option>
+            <option value="Shilajit">Shilajit</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Stock</label>
+          <input
+            type="number"
+            value={stock}
+            onChange={(e) => setStock(e.target.value)}
+            className="w-full p-2 border rounded"
+            required
+            min="0"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Image URL (optional)</label>
+          <input
+            type="text"
+            value={imageUrl}
+            onChange={(e) => {
+              setImageUrl(e.target.value);
+              setImage(null); // Clear file input if URL is used
+            }}
+            className="w-full p-2 border rounded"
+            disabled={image !== null}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium">Upload Image (optional)</label>
+          <input
+            type="file"
+            onChange={(e) => {
+              setImage(e.target.files[0]);
+              setImageUrl(''); // Clear URL if file is uploaded
+            }}
+            className="w-full p-2 border rounded"
+            accept="image/*"
+          />
+        </div>
+        <div className="flex space-x-2">
+          <button
+            type="submit"
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Add Product
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin')}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   );
 }
-
-AddProduct.propTypes = {
-  setProducts: PropTypes.func.isRequired,
-};
 
 export default AddProduct;

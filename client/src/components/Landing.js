@@ -1,15 +1,31 @@
-import { useState } from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Input from './Input.js';
+import { useAuth } from '../AuthContext.js';
+import backgroundImage from '../assets/organic-background.jpg';
 
 function Landing() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { user, login, signup } = useAuth();
 
-  const handleLogin = async (e) => {
+  console.log('Landing component rendered, user:', user);
+
+  // Redirect authenticated users
+  React.useEffect(() => {
+    if (user) {
+      console.log('Redirecting authenticated user:', user);
+      navigate(user.role === 'admin' || user.role === 'headAdmin' ? '/admin' : '/products');
+    }
+  }, [user, navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email.includes('@') || !email.includes('.')) {
       toast.error('Invalid email format');
@@ -19,54 +35,81 @@ function Landing() {
       toast.error('Password must be at least 6 characters');
       return;
     }
+    setLoading(true);
     try {
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
-        email,
-        password,
-      });
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('role', res.data.role);
-      toast.success('Login successful!');
-      navigate('/products');
+      if (isLogin) {
+        await login(email, password);
+        toast.success('Login successful!');
+      } else {
+        const res = await signup(email, password, 'user');
+        if (res.success) {
+          toast.success('Signup successful! Please login.');
+          setIsLogin(true);
+        } else {
+          toast.error(res.message || 'Signup failed');
+        }
+      }
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      console.error('Auth error:', error.response?.data || error);
+      toast.error(error.response?.data?.message || (isLogin ? 'Login failed' : 'Signup failed'));
+    } finally {
+      setLoading(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="text-center p-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-600 mx-auto"></div>
+      </div>
+    );
+  }
+
+  if (user) {
+    return null; // Redirect handled in useEffect
+  }
+
   return (
-    <div className="container mx-auto p-6 text-center">
-      <img
-        src="/images/organic-banner.jpg"
-        alt="Organic Products"
-        className="w-full max-w-2xl mx-auto mb-6 rounded-lg"
-      />
-      <h1 className="text-4xl font-bold mb-6 text-green-600">Welcome to GB Harvest Organic</h1>
-      <p className="text-lg mb-6 text-gray-600">Please log in to explore our organic products.</p>
-      <form onSubmit={handleLogin} className="max-w-md mx-auto space-y-4">
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <Input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button
-          type="submit"
-          className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 w-full"
-        >
-          Login
-        </button>
-      </form>
-      <p className="text-center mt-4 text-gray-600">
-        New user? <a href="/auth" className="text-blue-500 hover:underline">Sign Up</a>
-      </p>
+    <div
+      className="min-h-screen flex flex-col items-center justify-center bg-cover bg-center"
+      style={{ backgroundImage: `url(${backgroundImage})` }}
+    >
+      <div className="bg-white bg-opacity-90 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-center text-green-700">
+          {isLogin ? 'Login' : 'Signup'}
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="submit"
+            className="w-full p-2 bg-green-600 text-white rounded hover:bg-green-700"
+            disabled={loading}
+          >
+            {isLogin ? 'Login' : 'Signup'}
+          </button>
+        </form>
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-green-600 hover:underline"
+          >
+            {isLogin ? 'Need an account? Sign up' : 'Already have an account? Log in'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
