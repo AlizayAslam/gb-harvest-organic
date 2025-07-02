@@ -1,63 +1,50 @@
 import React, { useState } from 'react';
+import Input from './Input.js';
 import axios from 'axios';
-import { useAuth } from '../AuthContext.js'; // Correct path: up one directory
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import Input from './Input.js';
 
 function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.includes('@') || !email.includes('.')) {
-      toast.error('Invalid email format');
+    if (!email.includes('@') || email.length < 5) {
+      console.log('Invalid email format:', email);
+      toast.error('Please enter a valid email');
       return;
     }
     if (password.length < 6) {
+      console.log('Password too short:', password.length);
       toast.error('Password must be at least 6 characters');
       return;
     }
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/signup`, { email, password });
-      await login(email, password);
-      toast.success('Signup successful!');
-      navigate('/products');
+      console.log('Sending signup request to:', `${process.env.REACT_APP_API_URL}/api/auth/signup`, { email });
+      const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/signup`, { email, password });
+      console.log('Signup response:', res.data);
+      if (res.data.success) {
+        toast.success('Signup successful! Please login.');
+        navigate('/auth');
+      } else {
+        toast.error(res.data.message || 'Signup failed');
+      }
     } catch (error) {
-      console.error('Signup error:', error.response || error);
-      toast.error(error.response?.data?.message || 'Signup failed');
+      console.error('Signup error:', error.response?.data || error.message);
+      toast.error(error.response?.data?.message || 'Signup failed. Please try again.');
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-4 text-green-700">Sign Up</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <Input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button
-          type="submit"
-          className="w-full p-2 bg-green-500 text-white rounded hover:bg-green-600"
-        >
-          Sign Up
-        </button>
-      </form>
-    </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <button type="submit" className="w-full p-2 bg-green-600 text-white rounded hover:bg-green-700">
+        Signup
+      </button>
+    </form>
   );
 }
 

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-import { useAuth } from '../AuthContext.js'; // Correct path: up one directory
+import Input from './Input.js';
+import { useAuth } from '../AuthContext.js';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import Input from './Input.js';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -13,50 +12,36 @@ function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email.includes('@') || !email.includes('.')) {
-      toast.error('Invalid email format');
+    if (!email.includes('@') || email.length < 5) {
+      console.log('Invalid email format:', email);
+      toast.error('Please enter a valid email');
       return;
     }
     if (password.length < 6) {
+      console.log('Password too short:', password.length);
       toast.error('Password must be at least 6 characters');
       return;
     }
     try {
-      await login(email, password);
-      toast.success('Login successful!');
+      console.log('Sending login request to:', `${process.env.REACT_APP_API_URL}/api/auth/login`, { email });
+      const response = await login(email, password);
+      console.log('Login response:', response);
       navigate('/products');
+      toast.success('Login successful');
     } catch (error) {
-      console.error('Login error:', error.response || error);
-      toast.error(error.response?.data?.message || 'Login failed');
+      console.error('Login error:', error.response?.data || error.message);
+      toast.error(error.response?.data?.message || 'Login failed. Please check your credentials.');
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold mb-4 text-green-700">Login</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-        <Input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button
-          type="submit"
-          className="w-full p-2 bg-green-500 text-white rounded hover:bg-green-600"
-        >
-          Login
-        </button>
-      </form>
-    </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Input label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <button type="submit" className="w-full p-2 bg-green-600 text-white rounded hover:bg-green-700">
+        Login
+      </button>
+    </form>
   );
 }
 
