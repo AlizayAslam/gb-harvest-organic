@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth } from './AuthContext.js';
+import { useAuth } from '../AuthContext.js'; // Correct path: up one directory
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();

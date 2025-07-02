@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
 import Input from './Input.js';
+import { useAuth } from '../AuthContext.js'; // Path: up one directory
 
 function AddProduct({ setProducts }) {
   const [newProduct, setNewProduct] = useState({
@@ -11,14 +12,24 @@ function AddProduct({ setProducts }) {
     category: '',
     description: '',
     stock: '',
-    image: '',
+    imageUrl: '',
   });
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role');
+  const [imageFile, setImageFile] = useState(null);
+  const { user } = useAuth();
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewProduct({ ...newProduct, [name]: value });
+  };
+
+  const handleFileChange = (e) => {
+    setImageFile(e.target.files[0]);
+    setNewProduct({ ...newProduct, imageUrl: '' });
+  };
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
-    if (role !== 'admin' && role !== 'headAdmin') {
+    if (user?.role !== 'admin' && user?.role !== 'headAdmin') {
       toast.error('Only admins can add products!');
       return;
     }
@@ -30,16 +41,40 @@ function AddProduct({ setProducts }) {
       toast.error('Price and stock cannot be negative!');
       return;
     }
+
+    const formData = new FormData();
+    formData.append('name', newProduct.name);
+    formData.append('price', newProduct.price);
+    formData.append('category', newProduct.category);
+    formData.append('description', newProduct.description);
+    formData.append('stock', newProduct.stock);
+    if (imageFile) {
+      formData.append('image', imageFile);
+    } else if (newProduct.imageUrl) {
+      formData.append('imageUrl', newProduct.imageUrl);
+    }
+
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_API_URL}/api/products`,
-        newProduct,
-        { headers: { Authorization: `Bearer ${token}` } }
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       );
-      setProducts((prev) => [...prev, response.data]);
-      setNewProduct({ name: '', price: '', category: '', description: '', stock: '', image: '' });
-      toast.success('Product added successfully!');
+      if (response.data.success) {
+        setProducts((prev) => [...prev, response.data.product]);
+        setNewProduct({ name: '', price: '', category: '', description: '', stock: '', imageUrl: '' });
+        setImageFile(null);
+        toast.success('Product added successfully!');
+      } else {
+        toast.error(response.data.message || 'Failed to add product');
+      }
     } catch (error) {
+      console.error('Add product error:', error.response || error);
       toast.error(error.response?.data?.message || 'Failed to add product');
     }
   };
@@ -51,21 +86,25 @@ function AddProduct({ setProducts }) {
         <Input
           type="text"
           placeholder="Product Name"
+          name="name"
           value={newProduct.name}
-          onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+          onChange={handleInputChange}
           required
         />
         <Input
           type="number"
           placeholder="Price"
+          name="price"
           value={newProduct.price}
-          onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+          onChange={handleInputChange}
           required
           min="0"
+          step="0.01"
         />
         <select
+          name="category"
           value={newProduct.category}
-          onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+          onChange={handleInputChange}
           className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           required
         >
@@ -77,22 +116,32 @@ function AddProduct({ setProducts }) {
         <Input
           type="text"
           placeholder="Description"
+          name="description"
           value={newProduct.description}
-          onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+          onChange={handleInputChange}
         />
         <Input
           type="number"
           placeholder="Stock"
+          name="stock"
           value={newProduct.stock}
-          onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
+          onChange={handleInputChange}
           required
           min="0"
         />
         <Input
           type="text"
           placeholder="Image URL (optional)"
-          value={newProduct.image}
-          onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
+          name="imageUrl"
+          value={newProduct.imageUrl}
+          onChange={handleInputChange}
+          disabled={imageFile !== null}
+        />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="w-full p-3 border rounded-lg"
         />
         <button
           type="submit"

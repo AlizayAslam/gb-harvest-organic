@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../AuthContext.js'; // Correct path: up one directory
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import Input from './Input';
+import Input from './Input.js';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -26,6 +26,7 @@ function Login() {
       toast.success('Login successful!');
       navigate('/products');
     } catch (error) {
+      console.error('Login error:', error.response || error);
       toast.error(error.response?.data?.message || 'Login failed');
     }
   };

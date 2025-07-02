@@ -1,77 +1,117 @@
 const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
-const jwt = require('jsonwebtoken');
+const authMiddleware = require('../middleware/auth');
 
-const authenticate = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    if (req.user.role !== 'admin' && req.user.role !== 'headAdmin') {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-    next();
-  } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
-  }
-};
-
+// Get all products
 router.get('/', async (req, res) => {
   try {
     const products = await Product.find();
-    res.json(products);
+    res.status(200).json({
+      success: true,
+      products,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error fetching products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch products',
+      error: error.message,
+    });
   }
 });
 
-router.post('/', authenticate, async (req, res) => {
+// Get a single product by ID
+router.get('/:id', async (req, res) => {
   try {
-    const { name, price, category, description, stock, image } = req.body;
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+      });
+    }
+    res.status(200).json({
+      success: true,
+      product,
+    });
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch product',
+      error: error.message,
+    });
+  }
+});
+
+// Add a new product
+router.post('/', authMiddleware, async (req, res) => {
+  try {
+    const { name, price, description, category, stock, image } = req.body;
+
     if (!name || !price || !category || !stock) {
-      return res.status(400).json({ message: 'Name, price, category, and stock are required' });
+      return res.status(400).json({
+        success: false,
+        message: 'Name, price, category, and stock are required',
+      });
     }
-    if (price < 0 || stock < 0) {
-      return res.status(400).json({ message: 'Price and stock cannot be negative' });
-    }
-    const product = new Product({ name, price, category, description, stock, image });
+
+    const product = new Product({ name, price, description, category, stock, image });
     await product.save();
-    res.status(201).json(product);
+    res.status(201).json({
+      success: true,
+      message: 'Product added successfully',
+      product,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error adding product:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add product',
+      error: error.message,
+    });
   }
 });
 
-router.put('/:id', authenticate, async (req, res) => {
+// Edit an existing product
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const { name, price, category, description, stock, image } = req.body;
+    const { id } = req.params;
+    const { name, price, description, category, stock, image } = req.body;
+
     if (!name || !price || !category || !stock) {
-      return res.status(400).json({ message: 'Name, price, category, and stock are required' });
+      return res.status(400).json({
+        success: false,
+        message: 'Name, price, category, and stock are required',
+      });
     }
-    if (price < 0 || stock < 0) {
-      return res.status(400).json({ message: 'Price and stock cannot be negative' });
-    }
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      { name, price, category, description, stock, image },
-      { new: true }
-    );
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-    res.json(product);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
-  }
-});
 
-router.delete('/:id', authenticate, async (req, res) => {
-  try {
-    const product = await Product.findByIdAndDelete(req.params.id);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-    res.json({ message: 'Product deleted' });
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { name, price, description, category, stock, image, updatedAt: Date.now() },
+      { new: true, runValidators: true }
+    );
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Product updated successfully',
+      product,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error editing product:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to edit product',
+      error: error.message,
+    });
   }
 });
 

@@ -1,43 +1,36 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
-const authRoutes = require('./routes/auth');
+const multer = require('multer');
+const path = require('path');
+require('dotenv').config();
 const productRoutes = require('./routes/product');
-
-console.log('MONGODB_URI:', process.env.MONGODB_URI);
+const authRoutes = require('./routes/auth');
 
 const app = express();
-
-app.use(cors());
 app.use(express.json());
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
 
-const connectDB = async () => {
-  try {
-    if (!process.env.MONGODB_URI) {
-      throw new Error('MONGODB_URI is undefined');
-    }
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      maxPoolSize: 10,
-    });
-    console.log('MongoDB connected');
-  } catch (err) {
-    console.error('MongoDB connection error:', err.message);
-    setTimeout(connectDB, 5000);
-  }
-};
-
-connectDB();
-
-mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB disconnected, reconnecting...');
-  connectDB();
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'Uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
 });
+const upload = multer({ storage });
 
-const PORT = process.env.PORT || 5000;
+// Serve uploaded images statically
+app.use('/uploads', express.static(path.join(__dirname, 'Uploads')));
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch(err => console.error('MongoDB connection error:', err.message, err.stack));
+
+// Mount routes
+app.use('/api/products', upload.single('image'), productRoutes);
+app.use('/api/auth', authRoutes);
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
